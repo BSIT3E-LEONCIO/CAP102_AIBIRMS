@@ -73,49 +73,38 @@ Route::middleware([
         }
         return app(\App\Http\Controllers\IncidentReportController::class)->generate($request);
     })->name('incident-report.generate');
-});
 
+    // Protected dispatch route (requires auth + verified); role logic remains inside
+    Route::get('/dispatch', function (\Illuminate\Http\Request $request) {
+        $user = Auth::user();
+        $incidentId = $request->query('incident_id');
+        $incident = $incidentId ? Incident::where('firebase_id', $incidentId)->first() : null;
 
-
-Route::get('/dispatch', function (
-    \Illuminate\Http\Request $request
-) {
-    $user = Auth::user();
-    $incidentId = $request->query('incident_id');
-    $incident = $incidentId ? Incident::where('firebase_id', $incidentId)->first() : null;
-
-    if ($user && $user->role === 'admin') {
-        // Admins can access all
-        return view('dispatch.index', compact('incidentId', 'incident'));
-    }
-
-    if ($user && $user->role === 'responder') {
-        // Responders: only if assigned
-        $assigned = \App\Models\Dispatch::where(function ($q) use ($incidentId) {
-            $q->where('incident_id', $incidentId)
-                ->orWhere('incident_id', \App\Models\Incident::where('firebase_id', $incidentId)->value('id'));
-        })
-            ->where('responder_id', $user->id)
-            ->exists();
-        if ($assigned) {
+        if ($user && $user->role === 'admin') {
+            // Admins can access all
             return view('dispatch.index', compact('incidentId', 'incident'));
         }
-        // Not assigned: redirect to responder dashboard
-        return redirect()->route('responder.incidents');
-    }
 
-    // Not logged in: redirect to login
-    return redirect()->route('login');
-});
-Route::get('/test-firebase', function (FirebaseService $firebaseService) {
-    $incidents = $firebaseService->getIncidents();
-    return response()->json($incidents);
+        if ($user && $user->role === 'responder') {
+            // Responders: only if assigned
+            $assigned = \App\Models\Dispatch::where(function ($q) use ($incidentId) {
+                $q->where('incident_id', $incidentId)
+                    ->orWhere('incident_id', \App\Models\Incident::where('firebase_id', $incidentId)->value('id'));
+            })
+                ->where('responder_id', $user->id)
+                ->exists();
+            if ($assigned) {
+                return view('dispatch.index', compact('incidentId', 'incident'));
+            }
+            // Not assigned: redirect to responder dashboard
+            return redirect()->route('responder.incidents');
+        }
+
+        // Fallback (shouldn't hit due to middleware): redirect to login
+        return redirect()->route('login');
+    })->name('dispatch');
 });
 
-Route::get('/test-summary', function (FirebaseService $firebaseService) {
-    $summaryData = $firebaseService->getSummaryData();
-    return response()->json($summaryData);
-});
 
 // Admin creation page (only if no admin exists) - accessible to guests only with rate limiting
 Route::middleware(['guest', 'throttle:10,1'])->group(function () {

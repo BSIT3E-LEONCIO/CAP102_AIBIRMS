@@ -71,8 +71,8 @@ class UserManagement extends Component
 
     private function generatePassword($length = 10)
     {
-        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-        return substr(str_shuffle(str_repeat($chars, $length)), 0, $length);
+        // Use Laravel's cryptographically secure password generator
+        return \Illuminate\Support\Str::password($length);
     }
 
     public function closeModal()
