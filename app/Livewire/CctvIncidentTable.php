@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Incident;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Carbon\Carbon;
 
 class CctvIncidentTable extends Component
 {
@@ -28,7 +29,27 @@ class CctvIncidentTable extends Component
 
     public $showHidden = false;
 
-    protected $updatesQueryString = ['search', 'typeFilter', 'sortField', 'sortDirection', 'page'];
+    // Date filtering controls (shared with report generator)
+    public $period = 'day'; // day|week|month|year
+    public $anchorDate; // Y-m-d (used for day/week/month)
+    public $allYears = false; // legacy compatibility (report param)
+    public $yearSelection = 'all'; // 'all' or 4-digit year string
+    public $years = [];
+
+    protected $updatesQueryString = ['search', 'typeFilter', 'statusFilter', 'sortField', 'sortDirection', 'page', 'perPage', 'showHidden', 'period', 'anchorDate', 'yearSelection'];
+
+    public function mount()
+    {
+        $this->anchorDate = $this->anchorDate ?: now()->toDateString();
+        // migrate legacy query param allYears to yearSelection if present
+        if ($this->period === 'year') {
+            if ($this->allYears) {
+                $this->yearSelection = 'all';
+            } elseif ($this->anchorDate) {
+                $this->yearSelection = (string) Carbon::parse($this->anchorDate)->year;
+            }
+        }
+    }
 
     public function updatingSearch()
     {
@@ -41,6 +62,26 @@ class CctvIncidentTable extends Component
     }
 
     public function updatingPerPage()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPeriod()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingAnchorDate()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingAllYears()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingYearSelection()
     {
         $this->resetPage();
     }
@@ -60,7 +101,8 @@ class CctvIncidentTable extends Component
         if ($value) {
             // Only select IDs of incidents currently displayed (after filters, sorting, and pagination)
             $incidents = $this->getCurrentIncidents();
-            $this->selectedIncidents = $incidents->pluck('id')->toArray();
+            // Ensure we pluck from the paginator items collection
+            $this->selectedIncidents = collect($incidents->items())->pluck('id')->toArray();
         } else {
             $this->selectedIncidents = [];
         }
@@ -73,6 +115,7 @@ class CctvIncidentTable extends Component
     {
         $query = Incident::query()->where('source', 'cctv');
         $query->where('hidden', $this->showHidden);
+        $this->applyDateFilter($query);
         if ($this->search) {
             $s = '%' . $this->search . '%';
             $query->where(function ($q) use ($s) {
@@ -96,6 +139,28 @@ class CctvIncidentTable extends Component
         }
 
         return $query->orderBy($this->sortField, $this->sortDirection)->paginate($this->perPage);
+    }
+
+    protected function applyDateFilter($query)
+    {
+        $date = $this->anchorDate ? Carbon::parse($this->anchorDate) : Carbon::now();
+        switch ($this->period) {
+            case 'day':
+                $query->whereDate('timestamp', $date->toDateString());
+                break;
+            case 'week':
+                $query->whereBetween('timestamp', [$date->copy()->startOfWeek(), $date->copy()->endOfWeek()]);
+                break;
+            case 'month':
+                $query->whereYear('timestamp', $date->year)->whereMonth('timestamp', $date->month);
+                break;
+            case 'year':
+                // If a specific year is chosen, filter by it; otherwise no year filter
+                if ($this->yearSelection !== 'all') {
+                    $query->whereYear('timestamp', (int) $this->yearSelection);
+                }
+                break;
+        }
     }
 
     public function updatedSelectedIncidents()
@@ -134,6 +199,7 @@ class CctvIncidentTable extends Component
     {
         $query = Incident::query()->where('source', 'cctv');
         $query->where('hidden', $this->showHidden);
+        $this->applyDateFilter($query);
         if ($this->search) {
             $s = '%' . $this->search . '%';
             $query->where(function ($q) use ($s) {
@@ -157,10 +223,18 @@ class CctvIncidentTable extends Component
         }
         $incidents = $query->orderBy($this->sortField, $this->sortDirection)->paginate($this->perPage);
         $types = Incident::query()->where('source', 'cctv')->distinct()->pluck('type');
+        $this->years = Incident::query()
+            ->where('source', 'cctv')
+            ->selectRaw('YEAR(timestamp) as y')
+            ->distinct()
+            ->orderBy('y', 'desc')
+            ->pluck('y')
+            ->toArray();
 
         return view('livewire.cctv-incident-table', [
             'incidents' => $incidents,
             'types' => $types,
+            'years' => $this->years,
         ]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Incident;
+use Carbon\Carbon;
 
 class MobileIncidentTable extends Component
 {
@@ -21,7 +22,26 @@ class MobileIncidentTable extends Component
     public $selectedIncidents = [];
     public $selectAll = false;
 
-    protected $updatesQueryString = ['search', 'typeFilter', 'statusFilter', 'sortField', 'sortDirection', 'page'];
+    // Date filtering controls (shared with report generator)
+    public $period = 'day'; // day|week|month|year
+    public $anchorDate; // Y-m-d (used for day/week/month)
+    public $allYears = false; // legacy compatibility
+    public $yearSelection = 'all'; // 'all' or specific year
+    public $years = [];
+
+    protected $updatesQueryString = ['search', 'typeFilter', 'statusFilter', 'sortField', 'sortDirection', 'page', 'perPage', 'showHidden', 'period', 'anchorDate', 'yearSelection'];
+
+    public function mount()
+    {
+        $this->anchorDate = $this->anchorDate ?: now()->toDateString();
+        if ($this->period === 'year') {
+            if ($this->allYears) {
+                $this->yearSelection = 'all';
+            } elseif ($this->anchorDate) {
+                $this->yearSelection = (string) Carbon::parse($this->anchorDate)->year;
+            }
+        }
+    }
 
     public function updatingSearch()
     {
@@ -32,6 +52,26 @@ class MobileIncidentTable extends Component
         $this->resetPage();
     }
     public function updatingPerPage()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPeriod()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingAnchorDate()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingAllYears()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingYearSelection()
     {
         $this->resetPage();
     }
@@ -75,6 +115,7 @@ class MobileIncidentTable extends Component
         } else {
             $query->where('hidden', false);
         }
+        $this->applyDateFilter($query);
         if ($this->search) {
             $s = '%' . $this->search . '%';
             $query->where(function ($q) use ($s) {
@@ -106,6 +147,27 @@ class MobileIncidentTable extends Component
             $query->orderBy($this->sortField, $this->sortDirection);
         }
         return $query->paginate($this->perPage);
+    }
+
+    protected function applyDateFilter($query)
+    {
+        $date = $this->anchorDate ? Carbon::parse($this->anchorDate) : Carbon::now();
+        switch ($this->period) {
+            case 'day':
+                $query->whereDate('timestamp', $date->toDateString());
+                break;
+            case 'week':
+                $query->whereBetween('timestamp', [$date->copy()->startOfWeek(), $date->copy()->endOfWeek()]);
+                break;
+            case 'month':
+                $query->whereYear('timestamp', $date->year)->whereMonth('timestamp', $date->month);
+                break;
+            case 'year':
+                if ($this->yearSelection !== 'all') {
+                    $query->whereYear('timestamp', (int) $this->yearSelection);
+                }
+                break;
+        }
     }
 
     public function updatedSelectedIncidents()
@@ -141,6 +203,7 @@ class MobileIncidentTable extends Component
         } else {
             $query->where('hidden', false);
         }
+        $this->applyDateFilter($query);
         if ($this->search) {
             $s = '%' . $this->search . '%';
             $query->where(function ($q) use ($s) {
@@ -173,9 +236,17 @@ class MobileIncidentTable extends Component
         }
         $incidents = $query->paginate($this->perPage);
         $types = Incident::query()->where('source', 'mobile')->distinct()->pluck('type');
+        $this->years = Incident::query()
+            ->where('source', 'mobile')
+            ->selectRaw('YEAR(timestamp) as y')
+            ->distinct()
+            ->orderBy('y', 'desc')
+            ->pluck('y')
+            ->toArray();
         return view('livewire.mobile-incident-table', [
             'incidents' => $incidents,
             'types' => $types,
+            'years' => $this->years,
         ]);
     }
 }

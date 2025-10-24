@@ -1,24 +1,37 @@
 <div>
     <!-- Report Controls -->
-    <div class="flex items-center gap-3 mb-4" x-data="{ period: 'day' }">
+    <div class="flex items-center gap-3 mb-4"
+        x-data="{ period: @entangle('period').live, allYears: @entangle('allYears').live, anchorDate: @entangle('anchorDate').live, yearSelection: @entangle('yearSelection').live }">
         <form method="GET" action="{{ route('incident-report.generate') }}" target="_blank"
-            class="flex gap-2 items-center w-full justify-end" x-data="{ period: 'day', allYears: false }">
-            <select name="period" x-model="period"
+            class="flex gap-2 items-center w-full justify-end">
+            <select name="period" x-model="period" wire:model.live="period"
                 class="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="day">Day</option>
                 <option value="week">Week</option>
                 <option value="month">Month</option>
                 <option value="year">Year</option>
             </select>
-            <input type="date" name="date" value="{{ now()->toDateString() }}"
-                x-show="period === 'day' || period === 'week' || period === 'month'"
+            <input type="date" name="date" x-model="anchorDate" wire:model.live="anchorDate"
+                value="{{ now()->toDateString() }}" x-show="period === 'day' || period === 'week' || period === 'month'"
+                :disabled="!(period === 'day' || period === 'week' || period === 'month')"
                 class="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <template x-if="period === 'year'">
-                <label class="flex items-center ml-2">
-                    <input type="checkbox" name="allYears" value="1" x-model="allYears"
-                        class="form-checkbox h-4 w-4 text-blue-600 mr-1">
-                    <span class="text-xs text-gray-700 dark:text-white">All Years</span>
-                </label>
+                <div class="ml-2">
+                    <select name="yearSelection" wire:model.live="yearSelection" x-model="yearSelection"
+                        class="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all">All Years</option>
+                        @foreach(($years ?? []) as $y)
+                        <option value="{{ $y }}">{{ $y }}</option>
+                        @endforeach
+                    </select>
+                    <!-- Report hidden fields for year mode (render only the one we need) -->
+                    <template x-if="yearSelection === 'all'">
+                        <input type="hidden" name="allYears" value="1">
+                    </template>
+                    <template x-if="yearSelection !== 'all'">
+                        <input type="hidden" name="date" :value="`${yearSelection}-01-01`">
+                    </template>
+                </div>
             </template>
             <input type="hidden" name="source" value="cctv">
             <input type="hidden" name="typeFilter" value="{{ $typeFilter }}">
@@ -169,7 +182,9 @@
                                 class="h-16 w-auto rounded shadow border border-gray-200 dark:border-gray-600 cursor-pointer"
                                 @click="showModal = true" />
                             <!-- Modal -->
-                            <div x-show="showModal" x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70" @click.self="showModal = false">
+                            <div x-show="showModal" x-transition
+                                class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
+                                @click.self="showModal = false">
                                 <img src="{{ $incident->proof_image_url }}" alt="Screenshot Full Size"
                                     class="object-contain rounded-lg shadow-2xl"
                                     style="max-height: 90vh; max-width: 95vw;" />
