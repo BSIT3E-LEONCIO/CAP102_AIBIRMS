@@ -15,10 +15,15 @@ class ResponderHistory extends Component
 
     public $search = '';
     public $perPage = 10;
+    public $dateFilter = 'all';
     public $sortField = 'timestamp';
     public $sortDirection = 'desc';
 
-    protected $updatesQueryString = ['search', 'sortField', 'sortDirection', 'page'];
+    protected $updatesQueryString = ['search', 'sortField', 'sortDirection', 'dateFilter', 'page'];
+    public function updatingDateFilter()
+    {
+        $this->resetPage();
+    }
 
     public function updatingSearch()
     {
@@ -76,6 +81,16 @@ class ResponderHistory extends Component
                     ->orWhereRaw("DATE_FORMAT(timestamp, '%d') LIKE ?", [$s])
                     ->orWhereRaw("DATE_FORMAT(timestamp, '%M %d, %Y') LIKE ?", [$s]);
             });
+        }
+        // Date filter logic
+        if ($this->dateFilter === 'today') {
+            $query->whereDate('timestamp', now()->toDateString());
+        } elseif ($this->dateFilter === 'last24') {
+            $query->where('timestamp', '>=', now()->subDay());
+        } elseif ($this->dateFilter === 'last7') {
+            $query->where('timestamp', '>=', now()->subDays(7));
+        } elseif ($this->dateFilter === 'last30') {
+            $query->where('timestamp', '>=', now()->subDays(30));
         }
         $incidents = $query->orderBy($this->sortField, $this->sortDirection)->paginate($this->perPage);
         return view('livewire.responder-history', [

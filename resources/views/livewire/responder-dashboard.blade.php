@@ -22,6 +22,14 @@
             </select>
         </div>
         <div>
+            <select wire:model.live="sourceFilter"
+                class="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">All Sources</option>
+                <option value="mobile">Mobile</option>
+                <option value="cctv">CCTV</option>
+            </select>
+        </div>
+        <div>
             <select wire:model.live="statusFilter"
                 class="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">All Statuses</option>

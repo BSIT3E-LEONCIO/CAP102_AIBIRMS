@@ -13,6 +13,16 @@
             </div>
         </div>
         <div>
+            <select wire:model.live="dateFilter"
+                class="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2">
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="last24">Last 24 Hours</option>
+                <option value="last7">Last 7 Days</option>
+                <option value="last30">Last 30 Days</option>
+            </select>
+        </div>
+        <div>
             <select wire:model.live="perPage"
                 class="pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="5">5</option>
@@ -64,7 +74,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6"
+                    <td colspan="12"
                         class="px-6 py-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-history text-gray-400 dark:text-gray-500 text-2xl mb-2"></i>

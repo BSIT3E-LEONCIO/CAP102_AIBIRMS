@@ -18,6 +18,7 @@ class ResponderDashboard extends Component
     public $search = '';
     public $statusFilter = '';
     public $filterType = '';
+    public $sourceFilter = '';
     public $perPage = 10;
     public $page = 1;
     public $total = 0;
@@ -30,7 +31,7 @@ class ResponderDashboard extends Component
     public $sortDirection = 'desc'; // asc|desc
 
     // Keep URL in sync with UI like the mobile table
-    protected $updatesQueryString = ['search', 'filterType', 'sortField', 'sortDirection', 'page', 'perPage'];
+    protected $updatesQueryString = ['search', 'filterType', 'sourceFilter', 'sortField', 'sortDirection', 'page', 'perPage'];
 
     // Livewire hooks for updating search/filter/pagination
     // Only use updated* hooks for Livewire v3 best practice
@@ -174,7 +175,10 @@ class ResponderDashboard extends Component
             $matchesType = $this->filterType
                 ? ((isset($incident['type']) && $incident['type'] === $this->filterType) || (isset($incident['event']) && $incident['event'] === $this->filterType))
                 : true;
-            return $matchesSearch && $matchesStatus && $matchesType;
+            $matchesSource = $this->sourceFilter
+                ? (($incident['source'] ?? '') === $this->sourceFilter)
+                : true;
+            return $matchesSearch && $matchesStatus && $matchesType && $matchesSource;
         })->values();
 
         // Sorting

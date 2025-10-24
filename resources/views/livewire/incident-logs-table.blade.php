@@ -136,7 +136,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8"
+                    <td colspan="12"
                         class="px-4 py-8 text-center text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">
                         <div class="flex flex-col items-center">
                             <svg class="w-8 h-8 text-gray-400 dark:text-gray-300 mb-2" fill="none" stroke="currentColor"
