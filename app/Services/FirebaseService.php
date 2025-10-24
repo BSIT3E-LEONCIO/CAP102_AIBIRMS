@@ -8,6 +8,14 @@ use Kreait\Firebase\Factory;
 class FirebaseService
 {
     /**
+     * Delete an incident from Firebase (mobile_incidents and incidents nodes).
+     * Used for bulk delete from Livewire tables.
+     */
+    public function deleteIncident($incidentId)
+    {
+        return $this->deleteIncidentFromFirebase($incidentId);
+    }
+    /**
      * Copy a resolved incident to incident_logs without removing from original node.
      */
     public function logResolvedIncident($incidentId, $resolvedAt = null)

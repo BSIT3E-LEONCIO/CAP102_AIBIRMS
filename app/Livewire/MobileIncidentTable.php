@@ -6,6 +6,8 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Incident;
 use Carbon\Carbon;
+use App\Models\Dispatch;
+use Illuminate\Support\Facades\DB;
 
 class MobileIncidentTable extends Component
 {
@@ -192,6 +194,43 @@ class MobileIncidentTable extends Component
             $this->selectedIncidents = [];
             $this->selectAll = false;
             session()->flash('status', 'Selected incidents have been unhidden.');
+        }
+    }
+
+    public function deleteSelected()
+    {
+        if (!empty($this->selectedIncidents)) {
+            DB::transaction(function () {
+                $incidents = Incident::whereIn('id', $this->selectedIncidents)->get(['id', 'firebase_id']);
+                $ids = $incidents->pluck('id')->all();
+                $firebaseIds = $incidents->pluck('firebase_id')->filter()->all();
+
+                // Delete from Firebase first
+                foreach ($incidents as $incident) {
+                    if ($incident->firebase_id) {
+                        try {
+                            app('App\\Services\\FirebaseService')->deleteIncident($incident->firebase_id);
+                        } catch (\Exception $e) {
+                            // Optionally log error, but continue
+                        }
+                    }
+                }
+
+                if (!empty($ids)) {
+                    Dispatch::whereIn('incident_id', $ids)->delete();
+                }
+                if (!empty($firebaseIds)) {
+                    Dispatch::whereIn('incident_id', $firebaseIds)->delete();
+                }
+
+                if (!empty($ids)) {
+                    Incident::whereIn('id', $ids)->delete();
+                }
+            });
+
+            $this->selectedIncidents = [];
+            $this->selectAll = false;
+            session()->flash('status', 'Selected incidents have been deleted from MySQL and Firebase.');
         }
     }
 
