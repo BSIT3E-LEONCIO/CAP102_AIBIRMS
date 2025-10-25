@@ -121,13 +121,45 @@ class IncidentDispatch extends Component
             }
             $incident->save();
 
-            // Update all related dispatches for this incident (force IDs to string)
+            // Update or clear related dispatches for this incident (force IDs to string)
             $idInt = (string) $incident->id;
             $idFirebase = (string) $incident->firebase_id;
-            \App\Models\Dispatch::where(function ($q) use ($idInt, $idFirebase) {
-                $q->where('incident_id', $idInt)
-                    ->orWhere('incident_id', $idFirebase);
-            })->update(['status' => $status]);
+            if ($status === 'new') {
+                // When resetting to New, unassign all responders and clear notes/timeline/history in a transaction
+                DB::beginTransaction();
+                try {
+                    \App\Models\Dispatch::where(function ($q) use ($idInt, $idFirebase) {
+                        $q->where('incident_id', $idInt)
+                            ->orWhere('incident_id', $idFirebase);
+                    })->delete();
+
+                    // Clear notes
+                    \App\Models\IncidentNote::where(function ($q) use ($idInt, $idFirebase) {
+                        $q->where('incident_id', $idInt)
+                            ->orWhere('incident_id', $idFirebase);
+                    })->delete();
+                    // Clear timeline
+                    \App\Models\IncidentTimeline::where(function ($q) use ($idInt, $idFirebase) {
+                        $q->where('incident_id', $idInt)
+                            ->orWhere('incident_id', $idFirebase);
+                    })->delete();
+                    // Clear incident logs (status history)
+                    \App\Models\IncidentLog::where(function ($q) use ($idInt, $idFirebase) {
+                        $q->where('incident_id', $idInt)
+                            ->orWhere('incident_id', $idFirebase);
+                    })->delete();
+                    DB::commit();
+                } catch (\Throwable $e) {
+                    DB::rollBack();
+                    $this->errorMessage = 'Failed to reset incident data: ' . $e->getMessage();
+                    return;
+                }
+            } else {
+                \App\Models\Dispatch::where(function ($q) use ($idInt, $idFirebase) {
+                    $q->where('incident_id', $idInt)
+                        ->orWhere('incident_id', $idFirebase);
+                })->update(['status' => $status]);
+            }
 
             $this->successMessage = 'Status updated.';
             // Database notification for admins
@@ -163,15 +195,17 @@ class IncidentDispatch extends Component
             // Don't block UI on Firebase failure; surface a soft warning
             $this->errorMessage = 'Status updated locally, but failed to update Firebase: ' . $e->getMessage();
         }
-        // Log to timeline
-        $user = Auth::user();
-        \App\Models\IncidentTimeline::create([
-            'incident_id' => $incident->id,
-            'user_id' => $user ? $user->id : null,
-            'action' => 'status_changed',
-            'details' => $this->status,
-        ]);
-        $this->loadTimeline();
+        // Log to timeline unless we've reset to a clean slate
+        if ($status !== 'new') {
+            $user = Auth::user();
+            \App\Models\IncidentTimeline::create([
+                'incident_id' => $incident->id,
+                'user_id' => $user ? $user->id : null,
+                'action' => 'status_changed',
+                'details' => $this->status,
+            ]);
+            $this->loadTimeline();
+        }
     }
 
     public function addResponder()
@@ -189,13 +223,66 @@ class IncidentDispatch extends Component
     {
         $this->successMessage = '';
         $this->errorMessage = '';
+        // Build the final, unique list of responder IDs (lead + additional)
+        $responderIds = array_values(array_unique(array_filter(array_merge([$this->mainResponder], $this->additionalResponders))));
+
+        // Resolve incident and collect both possible identifiers (DB id and firebase_id)
+        $incident = Incident::where('firebase_id', $this->incidentId)
+            ->orWhere('id', $this->incidentId)
+            ->first();
+        $matchIncidentIds = $incident
+            ? array_values(array_unique(array_filter([(string) $incident->id, (string) $incident->firebase_id, (string) $this->incidentId])))
+            : [(string) $this->incidentId];
+
         DB::beginTransaction();
         try {
-            $responderIds = array_filter(array_merge([$this->mainResponder], $this->additionalResponders));
+            // If nothing is selected, treat this as "unassign all responders"
             if (empty($responderIds)) {
-                $this->errorMessage = 'Please select at least one responder.';
+                // Unassign all responders
+                Dispatch::whereIn('incident_id', $matchIncidentIds)->delete();
+                // Clear notes, timeline, and logs for a full reset
+                \App\Models\IncidentNote::where(function ($q) use ($matchIncidentIds) {
+                    $q->whereIn('incident_id', $matchIncidentIds);
+                })->delete();
+                \App\Models\IncidentTimeline::where(function ($q) use ($matchIncidentIds) {
+                    $q->whereIn('incident_id', $matchIncidentIds);
+                })->delete();
+                \App\Models\IncidentLog::where(function ($q) use ($matchIncidentIds) {
+                    $q->whereIn('incident_id', $matchIncidentIds);
+                })->delete();
+
+                if ($incident) {
+                    $incident->status = 'new';
+                    // If it was previously resolved, ensure resolved_at cleared (safety)
+                    $incident->resolved_at = null;
+                    $incident->save();
+                    // Reflect to Firebase
+                    try {
+                        if (!empty($incident->firebase_id)) {
+                            $firebase = new FirebaseService();
+                            $firebase->updateIncidentStatus($incident->firebase_id, 'new');
+                            // Also remove from resolved_incidents if exists
+                            try {
+                                (new FirebaseService())->removeResolvedIncident($incident->firebase_id);
+                            } catch (\Throwable $e) {
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        $this->errorMessage = 'Unassigned locally, but failed to update Firebase: ' . $e->getMessage();
+                    }
+                }
+                DB::commit();
+                // Reset UI state
+                $this->mainResponder = '';
+                $this->additionalResponders = [];
+                $this->successMessage = 'Incident reset to New: responders, notes, and history cleared.';
+                // Refresh UI data immediately (no need to wait for poll)
+                $this->loadStatus();
+                $this->loadNotes();
+                $this->loadTimeline();
                 return;
             }
+            // Upsert the selected responders
             foreach ($responderIds as $responderId) {
                 Dispatch::updateOrCreate(
                     [
@@ -207,8 +294,18 @@ class IncidentDispatch extends Component
                     ]
                 );
             }
+
+            // Remove responders no longer selected (sync behavior)
+            $existingResponderIds = Dispatch::whereIn('incident_id', $matchIncidentIds)
+                ->pluck('responder_id')
+                ->toArray();
+            $toDelete = array_diff($existingResponderIds, $responderIds);
+            if (!empty($toDelete)) {
+                Dispatch::whereIn('incident_id', $matchIncidentIds)
+                    ->whereIn('responder_id', $toDelete)
+                    ->delete();
+            }
             // Also update the incident status in the incidents table
-            $incident = Incident::where('firebase_id', $this->incidentId)->orWhere('id', $this->incidentId)->first();
             if ($incident) {
                 $incident->status = 'dispatched';
                 $incident->save();
@@ -224,7 +321,7 @@ class IncidentDispatch extends Component
                 }
             }
             DB::commit();
-            $this->successMessage = 'Dispatch successful!';
+            $this->successMessage = 'Dispatch updated successfully!';
         } catch (\Exception $e) {
             DB::rollBack();
             $this->errorMessage = 'Dispatch failed: ' . $e->getMessage();

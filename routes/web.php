@@ -74,34 +74,29 @@ Route::middleware([
         return app(\App\Http\Controllers\IncidentReportController::class)->generate($request);
     })->name('incident-report.generate');
 
-    // Protected dispatch route (requires auth + verified); role logic remains inside
+    // Protected dispatch route: Admin-only view; responders get redirected to their details page if assigned
     Route::get('/dispatch', function (\Illuminate\Http\Request $request) {
         $user = Auth::user();
-        $incidentId = $request->query('incident_id');
+        $incidentId = $request->query('incident_id'); // firebase_id string in most cases
         $incident = $incidentId ? Incident::where('firebase_id', $incidentId)->first() : null;
+        $incidentPrimaryId = $incident?->id;
 
-        if ($user && $user->role === 'admin') {
-            // Admins can access all
+        if (!$user) {
+            abort(401);
+        }
+
+        if ($user->role === 'admin') {
+            // Admins can access the full dispatch page
             return view('dispatch.index', compact('incidentId', 'incident'));
         }
 
-        if ($user && $user->role === 'responder') {
-            // Responders: only if assigned
-            $assigned = \App\Models\Dispatch::where(function ($q) use ($incidentId) {
-                $q->where('incident_id', $incidentId)
-                    ->orWhere('incident_id', \App\Models\Incident::where('firebase_id', $incidentId)->value('id'));
-            })
-                ->where('responder_id', $user->id)
-                ->exists();
-            if ($assigned) {
-                return view('dispatch.index', compact('incidentId', 'incident'));
-            }
-            // Not assigned: redirect to responder dashboard
+        if ($user->role === 'responder') {
+            // Responders should never access the admin dispatch page; always redirect to their home/dashboard
             return redirect()->route('responder.incidents');
         }
 
-        // Fallback (shouldn't hit due to middleware): redirect to login
-        return redirect()->route('login');
+        // Any other role: forbidden
+        abort(403);
     })->name('dispatch');
 });
 

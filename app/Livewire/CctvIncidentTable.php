@@ -9,8 +9,15 @@ use Livewire\WithPagination;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
+
 class CctvIncidentTable extends Component
 {
+    public function updatingPage()
+    {
+        $this->selectAll = false;
+        // Optionally: $this->selectedIncidents = [];
+    }
+
     use WithPagination;
 
     public $search = '';
@@ -204,6 +211,8 @@ class CctvIncidentTable extends Component
                     if ($incident->firebase_id) {
                         try {
                             app('App\\Services\\FirebaseService')->deleteIncident($incident->firebase_id);
+                            // Also remove from resolved_incidents node
+                            app('App\\Services\\FirebaseService')->removeResolvedIncident($incident->firebase_id);
                         } catch (\Exception $e) {
                             // Optionally log error, but continue
                         }
@@ -222,11 +231,19 @@ class CctvIncidentTable extends Component
                 if (!empty($ids)) {
                     Incident::whereIn('id', $ids)->delete();
                 }
+
+                // Delete from incident_logs table in MySQL
+                if (!empty($ids)) {
+                    DB::table('incident_logs')->whereIn('incident_id', $ids)->delete();
+                }
+                if (!empty($firebaseIds)) {
+                    DB::table('incident_logs')->whereIn('incident_id', $firebaseIds)->delete();
+                }
             });
 
             $this->selectedIncidents = [];
             $this->selectAll = false;
-            session()->flash('status', 'Selected incidents have been deleted from MySQL and Firebase.');
+            session()->flash('status', 'Selected incidents have been deleted from MySQL, Firebase, resolved_incidents, and incident_logs.');
         }
     }
 

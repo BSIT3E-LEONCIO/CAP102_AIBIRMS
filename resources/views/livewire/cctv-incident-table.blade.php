@@ -154,7 +154,8 @@
             </thead>
             <tbody class="text-sm divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
                 @forelse($incidents as $incident)
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150 text-center">
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150 text-center"
+                    wire:key="mobile-incident-{{ $incident->id ?? $incident->firebase_id }}">
                     <td class="px-2 py-4">
                         <input type="checkbox" wire:model="selectedIncidents" value="{{ $incident->id }}"
                             class="form-checkbox h-4 w-4 text-blue-600">
@@ -205,7 +206,7 @@
                         '-' }}
                     </td>
                     <td class="px-6 py-4">
-                        <a href="/dispatch?incident_id={{ urlencode($incident->firebase_id) }}"
+                        <a href="{{ route('dispatch', ['incident_id' => $incident->firebase_id]) }}"
                             class="inline-flex items-center px-3 py-2 rounded-md bg-blue-600 dark:bg-blue-700 text-white text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-150">
                             <i class="fas fa-eye mr-1"></i>
                             View

@@ -64,18 +64,16 @@
             $href = '#';
 
             if ($type === 'incident' && $incidentId) {
-            // Use a relative link so the browser keeps the current base path
-            $href = 'dispatch?incident_id=' . urlencode($incidentId);
+            // Always generate the absolute URL via named route to avoid relative path issues
+            // e.g., on /incidents/cctv a plain "dispatch?..." would resolve to /incidents/dispatch
+            $href = route('dispatch', ['incident_id' => $incidentId]);
             } elseif (is_string($rawLink) && $rawLink !== '') {
-            // If it's an absolute http(s) URL, use as-is; if it starts with a leading slash, make it relative
+            // Keep fully-qualified URLs as-is; otherwise resolve against the app base URL
             if (str_starts_with($rawLink, 'http://') || str_starts_with($rawLink, 'https://')) {
-            // Convert fully-qualified link to a relative one (path + query) so it works under subfolders
-            $path = parse_url($rawLink, PHP_URL_PATH) ?? '';
-            $query = parse_url($rawLink, PHP_URL_QUERY) ?? '';
-            $relativePath = ltrim($path, '/');
-            $href = $relativePath . ($query ? ('?' . $query) : '');
+            $href = $rawLink;
             } else {
-            $href = ltrim($rawLink, '/');
+            // Ensure we build an absolute URL that respects subfolder deployments
+            $href = url('/' . ltrim($rawLink, '/'));
             }
             }
             @endphp

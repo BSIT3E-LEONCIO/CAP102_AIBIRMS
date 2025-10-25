@@ -138,141 +138,177 @@
         </div>
     </div>
 
-    <!-- Notes Section -->
-    <div
-        class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="bg-gray-50 dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-2">
-                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                    </path>
-                </svg>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Internal Notes</h3>
+
+    <!-- Thin scrollbar utility for vertical lists -->
+    <style>
+        /* Thin vertical scrollbar for modern browsers */
+        .scroll-thin-y {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(100, 116, 139, .6) transparent;
+        }
+
+        .scroll-thin-y::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .scroll-thin-y::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scroll-thin-y::-webkit-scrollbar-thumb {
+            background-color: rgba(100, 116, 139, .6);
+            border-radius: 9999px;
+        }
+
+        .dark .scroll-thin-y {
+            scrollbar-color: rgba(148, 163, 184, .6) transparent;
+        }
+
+        .dark .scroll-thin-y::-webkit-scrollbar-thumb {
+            background-color: rgba(148, 163, 184, .6);
+        }
+    </style>
+
+    <!-- Notes & Timeline Side by Side -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Internal Notes -->
+        <div
+            class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="bg-gray-50 dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                        </path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Internal Notes</h3>
+                </div>
             </div>
-        </div>
-        <div class="p-6">
-            <div class="space-y-3 max-h-40 overflow-y-auto mb-4">
-                @forelse($incidentNotes as $note)
-                <div
-                    class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-4 border-l-4 border-blue-500 relative">
-                    <!-- Top row: Avatar, Name, and Role badges in top-right -->
-                    <div class="flex items-start justify-between mb-2">
-                        <div class="flex items-start gap-3">
-                            <div
-                                class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                                {{ substr($note['user_name'], 0, 1) }}
+            <div class="p-6 flex flex-col">
+                <div class="space-y-3 overflow-y-auto overflow-x-hidden mb-4 scroll-thin-y" style="max-height: 18rem;">
+                    @forelse($incidentNotes as $note)
+                    <div
+                        class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-4 border-l-4 border-blue-500 relative">
+                        <!-- Top row: Avatar, Name, and Role badges in top-right -->
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-start gap-3">
+                                <div
+                                    class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                                    {{ substr($note['user_name'], 0, 1) }}
+                                </div>
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ $note['user_name']
+                                    }}</span>
                             </div>
-                            <span class="font-semibold text-gray-900 dark:text-white">{{ $note['user_name'] }}</span>
-                        </div>
-                        <div class="flex items-center gap-1.5 flex-shrink-0">
-                            @if(!empty($note['user_role']))
-                            <span
-                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold border
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                @if(!empty($note['user_role']))
+                                <span
+                                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold border
                                     @if($note['user_role'] === 'admin') bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-200 dark:border-red-700
                                     @elseif($note['user_role'] === 'responder') bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700
                                     @else bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700 @endif">
-                                @if($note['user_role'] === 'admin') A
-                                @elseif($note['user_role'] === 'responder') R
-                                @else {{ substr(ucfirst($note['user_role']), 0, 1) }}
+                                    @if($note['user_role'] === 'admin') ADMIN
+                                    @elseif($note['user_role'] === 'responder') RESPONDER
+                                    @else {{ substr(ucfirst($note['user_role']), 0, 1) }}
+                                    @endif
+                                </span>
                                 @endif
-                            </span>
-                            @endif
-                            @if(!empty($note['user_role']) && strtolower($note['user_role']) === 'responder' &&
-                            !empty($note['responder_type']))
+                                @if(!empty($note['user_role']) && strtolower($note['user_role']) === 'responder' &&
+                                !empty($note['responder_type']))
+                                <span
+                                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-700">
+                                    {{ $note['responder_type'] }}
+                                </span>
+                                @endif
+                            </div>
+                        </div>
+                        <!-- Note text -->
+                        <div class="text-gray-700 dark:text-gray-300 leading-relaxed pl-10 pr-16 mb-2">{{ $note['note']
+                            }}</div>
+                        <!-- Bottom-right timestamp -->
+                        <div class="absolute bottom-3 right-4">
                             <span
-                                class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-700">
-                                {{ $note['responder_type'] }}
-                            </span>
-                            @endif
+                                class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded-full">
+                                @php
+                                $createdAt = is_string($note['created_at']) ? \Carbon\Carbon::parse($note['created_at'])
+                                : $note['created_at'];
+                                $seconds = $createdAt->diffInSeconds(now());
+                                if ($seconds < 60) { echo max(1, round($seconds)) . 's' ; } elseif ($seconds < 3600) {
+                                    echo round($seconds / 60) . 'm' ; } elseif ($seconds < 86400) { echo round($seconds
+                                    / 3600) . 'h' ; } else { echo round($seconds / 86400) . 'd' ; } @endphp </span>
                         </div>
                     </div>
-                    <!-- Note text -->
-                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed pl-10 pr-16 mb-2">{{ $note['note'] }}
+                    @empty
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z">
+                            </path>
+                        </svg>
+                        <div class="text-gray-500 dark:text-gray-400">No notes yet.</div>
                     </div>
-                    <!-- Bottom-right timestamp -->
-                    <div class="absolute bottom-3 right-4">
-                        <span
-                            class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded-full">
-                            @php
-                            $createdAt = is_string($note['created_at']) ? \Carbon\Carbon::parse($note['created_at']) :
-                            $note['created_at'];
-                            $seconds = $createdAt->diffInSeconds(now());
-                            if ($seconds < 60) { echo max(1, round($seconds)) . 's' ; } elseif ($seconds < 3600) { echo
-                                round($seconds / 60) . 'm' ; } elseif ($seconds < 86400) { echo round($seconds / 3600)
-                                . 'h' ; } else { echo round($seconds / 86400) . 'd' ; } @endphp </span>
-                    </div>
+                    @endforelse
                 </div>
-                @empty
-                <div class="text-center py-8">
-                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z">
-                        </path>
-                    </svg>
-                    <div class="text-gray-500 dark:text-gray-400">No notes yet.</div>
-                </div>
-                @endforelse
-            </div>
-            <form wire:submit.prevent="addNote" class="flex gap-3">
-                <input type="text" wire:model.defer="newNote" @if($readOnly) disabled @endif class="flex-1 border rounded-lg px-4 py-2.5 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                    @if($readOnly)
-                        bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-70
-                    @else
-                        bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white
-                    @endif" placeholder="Add a note...">
-                <button type="submit" @if($readOnly) disabled @endif class="px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                    @if($readOnly)
-                        bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-300 cursor-not-allowed opacity-70
-                    @else
-                        bg-blue-600 hover:bg-blue-700 text-white
-                    @endif">
-                    Add Note
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Timeline Section -->
-    <div
-        class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="bg-gray-50 dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-2">
-                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Timeline</h3>
+                <form wire:submit.prevent="addNote" class="flex gap-3">
+                    <input type="text" wire:model.defer="newNote" @if($readOnly) disabled @endif class="flex-1 border rounded-lg px-4 py-2.5 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                        @if($readOnly)
+                            bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-70
+                        @else
+                            bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white
+                        @endif" placeholder="Add a note...">
+                    <button type="submit" @if($readOnly) disabled @endif class="px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                        @if($readOnly)
+                            bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-300 cursor-not-allowed opacity-70
+                        @else
+                            bg-blue-600 hover:bg-blue-700 text-white
+                        @endif">
+                        Add Note
+                    </button>
+                </form>
             </div>
         </div>
-        <div class="p-6">
-            <div class="space-y-4 max-h-40 overflow-y-auto">
-                @forelse($timeline as $item)
-                <div class="relative flex items-start gap-4">
-                    <div class="flex-shrink-0 w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
-                    <div class="flex-1 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-gray-900 dark:text-white">{{ $item['user_name'] }}</span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $item['created_at'] }}</span>
-                        </div>
-                        <div class="text-gray-700 dark:text-gray-300">
-                            <span class="font-medium">{{ $item['action'] }}:</span> {{ $item['details'] }}
-                        </div>
-                    </div>
-                </div>
-                @empty
-                <div class="text-center py-8">
-                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor"
+        <!-- Timeline -->
+        <div
+            class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="bg-gray-50 dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <div class="text-gray-500 dark:text-gray-400">No timeline entries yet.</div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Timeline</h3>
                 </div>
-                @endforelse
+            </div>
+            <div class="p-6 flex flex-col">
+                <div class="space-y-4 overflow-y-auto overflow-x-hidden scroll-thin-y" style="max-height: 18rem;">
+                    @forelse($timeline as $item)
+                    <div class="relative flex items-start gap-4">
+                        <div class="flex-shrink-0 w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
+                        <div class="flex-1 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ $item['user_name']
+                                    }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $item['created_at'] }}</span>
+                            </div>
+                            <div class="text-gray-700 dark:text-gray-300">
+                                <span class="font-medium">{{ $item['action'] }}:</span> {{ $item['details'] }}
+                            </div>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="text-gray-500 dark:text-gray-400">No timeline entries yet.</div>
+                    </div>
+                    @endforelse
+                </div>
             </div>
         </div>
     </div>

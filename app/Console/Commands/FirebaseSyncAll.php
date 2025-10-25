@@ -105,6 +105,18 @@ class FirebaseSyncAll extends Command
             if (!$isCctv) continue;
             // Detect if new before upsert
             $existed = DB::table('incidents')->where('firebase_id', $firebaseKey)->exists();
+
+            // Derive department if missing in Firebase based on the event type
+            $eventRaw = $incident['event'] ?? '';
+            $event = is_string($eventRaw) ? strtolower(trim($eventRaw)) : '';
+            $derivedDepartment = match ($event) {
+                'natural_disaster'   => 'MDRRMO',
+                'fire'               => 'BFP',
+                'criminal_activity' => 'PNP',
+                'accident' => 'QRT',
+                default              => null,
+            };
+            $department = $incident['department'] ?? $derivedDepartment;
             DB::table('incidents')->updateOrInsert(
                 ['firebase_id' => $firebaseKey],
                 [
@@ -112,7 +124,7 @@ class FirebaseSyncAll extends Command
                     'location' => $incident['camera_name'] ?? null,
                     'reporter_name' => 'CCTV',
                     'reporter_id' => null,
-                    'department' => $incident['department'] ?? null,
+                    'department' => $department,
                     'status' => $incident['status'] ?? null,
                     'timestamp' => isset($incident['timestamp']) ? date('Y-m-d H:i:s', strtotime($incident['timestamp'])) : null,
                     'source' => 'cctv',
