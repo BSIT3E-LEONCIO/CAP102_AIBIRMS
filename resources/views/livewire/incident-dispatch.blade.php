@@ -88,8 +88,8 @@
                 </button>
                 <button type="button"
                     class="w-1/2 bg-blue-900 text-white px-3 rounded-2xl font-bold shadow-lg hover:shadow-xl flex items-center justify-center gap-2 h-14 text-xs whitespace-nowrap"
-                    @if($readOnly) disabled style="opacity:0.5;cursor:not-allowed;" @endif
-                    x-data="{}" @if(!$readOnly) x-on:click.prevent="Swal.fire({
+                    @if($readOnly) disabled style="opacity:0.5;cursor:not-allowed;" @endif x-data="{}" @if(!$readOnly)
+                    x-on:click.prevent="Swal.fire({
                         title: 'Are you sure?',
                         text: 'Do you want to dispatch this incident?',
                         icon: 'question',
@@ -148,8 +148,8 @@
                 </div>
                 <button type="button"
                     class="w-full bg-blue-900 text-white py-3 px-4 rounded-2xl font-bold shadow-lg hover:shadow-xl flex items-center justify-center gap-2 h-12 text-xs whitespace-nowrap"
-                    @if($readOnly) disabled style="opacity:0.5;cursor:not-allowed;" @endif
-                    x-data="{}" @if(!$readOnly) x-on:click.prevent="Swal.fire({
+                    @if($readOnly) disabled style="opacity:0.5;cursor:not-allowed;" @endif x-data="{}" @if(!$readOnly)
+                    x-on:click.prevent="Swal.fire({
                         title: 'Update Status?',
                         text: 'Are you sure you want to update the status?',
                         icon: 'question',
@@ -214,45 +214,43 @@
                                 class="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                                 {{ substr($note->user->name ?? 'U', 0, 1) }}
                             </div>
-                            <span class="text-sm font-semibold text-gray-800 dark:text-white">{{ $note->user->name ?? 'Unknown' }}</span>
+                            <span class="text-sm font-semibold text-gray-800 dark:text-white">{{ $note->user->name ??
+                                'Unknown' }}</span>
                         </div>
                         <div class="flex items-center gap-1.5 flex-shrink-0">
                             @if(isset($note->user) && !empty($note->user->role))
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold border
+                            <span
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold border
                                     @if($note->user->role === 'admin') bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-200 dark:border-red-700
                                     @elseif($note->user->role === 'responder') bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700
                                     @else bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700 @endif">
-                                    @if($note->user->role === 'admin') A
-                                    @elseif($note->user->role === 'responder') R
-                                    @else {{ substr(ucfirst($note->user->role), 0, 1) }}
-                                    @endif
-                                </span>
+                                @if($note->user->role === 'admin') A
+                                @elseif($note->user->role === 'responder') R
+                                @else {{ substr(ucfirst($note->user->role), 0, 1) }}
+                                @endif
+                            </span>
                             @endif
-                            @if(isset($note->user) && strtolower($note->user->role ?? '') === 'responder' && !empty($note->user->responder_type))
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-700">
-                                    {{ $note->user->responder_type }}
-                                </span>
+                            @if(isset($note->user) && strtolower($note->user->role ?? '') === 'responder' &&
+                            !empty($note->user->responder_type))
+                            <span
+                                class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200 dark:border-emerald-700">
+                                {{ $note->user->responder_type }}
+                            </span>
                             @endif
                         </div>
                     </div>
                     <!-- Note text -->
-                    <div class="text-gray-700 dark:text-gray-200 text-sm leading-relaxed pl-10 pr-16 mb-2">{{ $note->note }}</div>
+                    <div class="text-gray-700 dark:text-gray-200 text-sm leading-relaxed pl-10 pr-16 mb-2">{{
+                        $note->note }}</div>
                     <!-- Bottom-right timestamp -->
                     <div class="absolute bottom-3 right-4">
-                        <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded-full">
+                        <span
+                            class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded-full">
                             @php
-                                $seconds = $note->created_at->diffInSeconds(now());
-                                if ($seconds < 60) {
-                                    echo max(1, round($seconds)) . 's';
-                                } elseif ($seconds < 3600) {
-                                    echo round($seconds / 60) . 'm';
-                                } elseif ($seconds < 86400) {
-                                    echo round($seconds / 3600) . 'h';
-                                } else {
-                                    echo round($seconds / 86400) . 'd';
-                                }
-                            @endphp
-                        </span>
+                            $seconds = $note->created_at->diffInSeconds(now());
+                            if ($seconds < 60) { echo max(1, round($seconds)) . 's' ; } elseif ($seconds < 3600) { echo
+                                round($seconds / 60) . 'm' ; } elseif ($seconds < 86400) { echo round($seconds / 3600)
+                                . 'h' ; } else { echo round($seconds / 86400) . 'd' ; } @endphp </span>
                     </div>
                 </div>
                 @empty
@@ -376,8 +374,8 @@
         <div class="w-full max-w-xl">
             <button type="button"
                 class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2"
-                @if($readOnly) disabled style="opacity:0.5;cursor:not-allowed;" @endif
-                x-data="{}" @if(!$readOnly) x-on:click.prevent="Swal.fire({
+                @if($readOnly) disabled style="opacity:0.5;cursor:not-allowed;" @endif x-data="{}" @if(!$readOnly)
+                x-on:click.prevent="Swal.fire({
                             title: 'Delete Incident?',
                             text: 'Are you sure you want to permanently delete this incident from both MySQL and Firebase?',
                             icon: 'warning',
@@ -391,7 +389,15 @@
             </button>
         </div>
     </div>
-
+    @if($readOnly)
+    <div class="w-full max-w-xl">
+        <a href="{{ route('incident-report.single', ['incidentId' => $incidentId]) }}"
+            class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold shadow-lg transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 bg-green-600 hover:bg-green-700 text-white">
+            <i class="fas fa-file-pdf"></i>
+            Download Report (PDF)
+        </a>
+    </div>
+    @endif
     <!-- Custom Scrollbar Styles -->
     <style>
         .custom-scrollbar::-webkit-scrollbar {

@@ -135,10 +135,16 @@
                         </div>
                     </td>
                     <td class="px-3 py-4">
-                        <a href="{{ route('dispatch', ['incident_id' => $incident->incident_id, 'from' => 'logs']) }}"
-                            class="inline-flex items-center px-3 py-1.5 rounded-md bg-blue-600 dark:bg-blue-900 text-white text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 shadow-sm">
-                            View
-                        </a>
+                        <div class="flex gap-2">
+                            <a href="{{ route('dispatch', ['incident_id' => $incident->incident_id, 'from' => 'logs']) }}"
+                                class="inline-flex items-center px-3 py-1.5 rounded-md bg-blue-600 dark:bg-blue-900 text-white text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 shadow-sm">
+                                View
+                            </a>
+                            <a href="{{ route('incident-report.single', ['incidentId' => $incident->incident_id]) }}"
+                                class="inline-flex items-center px-3 py-1.5 rounded-md bg-emerald-600 dark:bg-emerald-900 text-white text-xs font-semibold hover:bg-emerald-700 dark:hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors duration-200 shadow-sm">
+                                <i class="fas fa-file-alt"></i>
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 @empty

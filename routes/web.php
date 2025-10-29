@@ -74,6 +74,14 @@ Route::middleware([
         return app(\App\Http\Controllers\IncidentReportController::class)->generate($request);
     })->name('incident-report.generate');
 
+    // Per-incident PDF report
+    Route::get('/incident-report/{incidentId}', function ($incidentId, \Illuminate\Http\Request $request) {
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('dashboard');
+        }
+        return app(\App\Http\Controllers\IncidentReportController::class)->generateSingle($request, $incidentId);
+    })->name('incident-report.single');
+
     // Protected dispatch route: Admin-only view; responders get redirected to their details page if assigned
     Route::get('/dispatch', function (\Illuminate\Http\Request $request) {
         $user = Auth::user();
